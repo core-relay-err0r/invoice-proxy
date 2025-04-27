@@ -1,69 +1,104 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <meta charset="UTF-8">
   <title>Создать счёт</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding: 40px;
+    }
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+    .invoice-section {
+      margin-bottom: 30px;
+    }
+    .table {
+      margin-top: 20px;
+    }
+    .total-block {
+      text-align: right;
+      margin-top: 20px;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1>Создать новый счёт</h1>
-
-    <form id="invoiceForm">
-      <div class="row">
-        <div class="column">
-          <label>От кого (from):</label>
-          <input type="text" name="from" required>
-
-          <label>Кому (to):</label>
-          <input type="text" name="to" required>
-
-          <label>Адрес доставки (ship_to, optional):</label>
-          <input type="text" name="ship_to">
-        </div>
-        <div class="column">
-          <label>Дата выставления счёта (date):</label>
-          <input type="date" name="date">
-
-          <label>Условия оплаты (payment_terms):</label>
-          <input type="text" name="payment_terms">
-
-          <label>Срок оплаты (due_date):</label>
-          <input type="date" name="due_date">
-
-          <label>Номер заказа (PO Number):</label>
-          <input type="text" name="purchase_order">
-        </div>
+    <div class="invoice-header">
+      <div class="logo">
+        Company Logo
       </div>
+      <div>
+        <h1>INVOICE</h1>
+        <p>Invoice #: <input type="text" class="form-control d-inline-block w-auto" id="invoice_number"></p>
+        <p>Date: <input type="date" class="form-control d-inline-block w-auto" id="date"></p>
+        <p>Due Date: <input type="date" class="form-control d-inline-block w-auto" id="due_date"></p>
+      </div>
+    </div>
 
-      <h3>Товары / услуги:</h3>
-      <table id="items">
-        <thead>
-          <tr>
-            <th>Название</th>
-            <th>Количество</th>
-            <th>Цена за единицу</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><input type="text" name="item_name_0" required></td>
-            <td><input type="number" name="item_quantity_0" value="1" min="1" required></td>
-            <td><input type="number" name="item_amount_0" required></td>
-          </tr>
-        </tbody>
-      </table>
-      <button type="button" onclick="addItem()">+ Добавить товар</button>
+    <div class="row invoice-section">
+      <div class="col-md-6">
+        <h5>От кого (From):</h5>
+        <input class="form-control" type="text" id="from" required>
+      </div>
+      <div class="col-md-6">
+        <h5>Кому (To):</h5>
+        <input class="form-control" type="text" id="to" required>
+      </div>
+    </div>
 
-      <h3>Примечания (notes):</h3>
-      <textarea name="notes" rows="4"></textarea>
+    <div class="invoice-section">
+      <h5>Адрес доставки (Ship To):</h5>
+      <input class="form-control" type="text" id="ship_to">
+    </div>
 
-      <h3>Условия и политика (terms):</h3>
-      <textarea name="terms" rows="4"></textarea>
+    <h5>Товары / услуги:</h5>
+    <table class="table table-bordered" id="items">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>Количество</th>
+          <th>Цена за единицу</th>
+          <th>Сумма</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input class="form-control" type="text" name="item_name_0" required></td>
+          <td><input class="form-control" type="number" name="item_quantity_0" value="1" min="1" required onchange="recalculate()"></td>
+          <td><input class="form-control" type="number" name="item_amount_0" required onchange="recalculate()"></td>
+          <td><input class="form-control" type="text" disabled></td>
+        </tr>
+      </tbody>
+    </table>
+    <button type="button" class="btn btn-success" onclick="addItem()">+ Добавить товар</button>
 
-      <br><br>
-      <button type="submit">Создать счёт</button>
-    </form>
+    <div class="invoice-section">
+      <h5>Примечания (Notes):</h5>
+      <textarea class="form-control" id="notes" rows="3"></textarea>
+    </div>
+
+    <div class="invoice-section">
+      <h5>Условия и политика (Terms):</h5>
+      <textarea class="form-control" id="terms" rows="3"></textarea>
+    </div>
+
+    <div class="total-block">
+      <p><strong>Subtotal:</strong> $<span id="subtotal">0.00</span></p>
+      <p><strong>Tax (0%):</strong> $<span id="tax">0.00</span></p>
+      <p><strong>Total:</strong> $<span id="total">0.00</span></p>
+    </div>
+
+    <button class="btn btn-primary mt-4" onclick="createInvoice()">Создать счёт</button>
   </div>
 
   <script>
@@ -73,63 +108,35 @@
       const tbody = document.querySelector('#items tbody');
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" name="item_name_${itemCount}" required></td>
-        <td><input type="number" name="item_quantity_${itemCount}" value="1" min="1" required></td>
-        <td><input type="number" name="item_amount_${itemCount}" required></td>
+        <td><input class="form-control" type="text" name="item_name_${itemCount}" required></td>
+        <td><input class="form-control" type="number" name="item_quantity_${itemCount}" value="1" min="1" required onchange="recalculate()"></td>
+        <td><input class="form-control" type="number" name="item_amount_${itemCount}" required onchange="recalculate()"></td>
+        <td><input class="form-control" type="text" disabled></td>
       `;
       tbody.appendChild(tr);
       itemCount++;
     }
 
-    document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-
-      const items = [];
+    function recalculate() {
+      let subtotal = 0;
       for (let i = 0; i < itemCount; i++) {
-        const name = formData.get(`item_name_${i}`);
-        const quantity = formData.get(`item_quantity_${i}`);
-        const amount = formData.get(`item_amount_${i}`);
-        if (name && quantity && amount) {
-          items.push({
-            name,
-            quantity: parseInt(quantity),
-            amount: parseFloat(amount)
-          });
+        const quantity = document.getElementsByName(`item_quantity_${i}`)[0];
+        const amount = document.getElementsByName(`item_amount_${i}`)[0];
+        const totalCell = document.getElementsByName(`item_amount_${i}`)[0].parentElement.nextElementSibling.firstElementChild;
+        if (quantity && amount && totalCell) {
+          const total = quantity.value * amount.value;
+          subtotal += total;
+          totalCell.value = total.toFixed(2);
         }
       }
+      document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+      document.getElementById('tax').innerText = (0).toFixed(2);
+      document.getElementById('total').innerText = subtotal.toFixed(2);
+    }
 
-      const data = {
-        from: formData.get('from'),
-        to: formData.get('to'),
-        ship_to: formData.get('ship_to'),
-        date: formData.get('date'),
-        payment_terms: formData.get('payment_terms'),
-        due_date: formData.get('due_date'),
-        purchase_order: formData.get('purchase_order'),
-        notes: formData.get('notes'),
-        terms: formData.get('terms'),
-        items
-      };
-
-      const response = await fetch('/create-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'invoice.pdf';
-        a.click();
-        window.URL.revokeObjectURL(url);
-      } else {
-        alert('Ошибка создания счёта');
-      }
-    });
+    function createInvoice() {
+      alert('Инвойс будет сгенерирован! (Пока только заглушка)');
+    }
   </script>
 </body>
 </html>
