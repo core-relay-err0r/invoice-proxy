@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// Старая ручка через форму
+// Ручка для создания инвойса через форму
 app.post('/create-invoice', async (req, res) => {
   try {
     const invoiceData = req.body;
@@ -28,12 +28,12 @@ app.post('/create-invoice', async (req, res) => {
     });
     res.send(response.data);
   } catch (error) {
-    console.error(error);
+    console.error(error.message);
     res.status(500).send('Ошибка генерации счёта.');
   }
 });
 
-// НОВАЯ ручка через API
+// Ручка для создания инвойса через API
 app.post('/api/invoice', async (req, res) => {
   try {
     const invoiceData = req.body;
@@ -57,37 +57,87 @@ app.post('/api/invoice', async (req, res) => {
   }
 });
 
-// HTML-форма
+// HTML-форма полностью повторяющая Invoice Generator
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
-    <html>
+    <html lang="ru">
     <head>
+      <meta charset="UTF-8">
       <title>Создать счёт</title>
     </head>
     <body>
       <h1>Создать новый счёт</h1>
+
       <form id="invoiceForm">
-        <label>Кому (Имя клиента):<br><input type="text" name="to" required></label><br><br>
-        <label>От кого (Твоя компания):<br><input type="text" name="from" required></label><br><br>
-        <label>Описание:<br><input type="text" name="notes"></label><br><br>
-        <label>Дата оплаты:<br><input type="date" name="payment_terms"></label><br><br>
-        <label>Сумма ($):<br><input type="number" name="items[0][amount]" required></label><br><br>
+        <label>От кого (from):<br><input type="text" name="from" required></label><br><br>
+        <label>Кому (to):<br><input type="text" name="to" required></label><br><br>
+        <label>Адрес доставки (ship_to, optional):<br><input type="text" name="ship_to"></label><br><br>
+        <label>Дата (date):<br><input type="date" name="date"></label><br><br>
+        <label>Условия оплаты (payment_terms):<br><input type="text" name="payment_terms"></label><br><br>
+        <label>Дата оплаты (due_date):<br><input type="date" name="due_date"></label><br><br>
+        <label>Номер заказа (PO Number):<br><input type="text" name="purchase_order"></label><br><br>
+
+        <h3>Товары / услуги:</h3>
+        <div id="items">
+          <div class="item">
+            <label>Название:<br><input type="text" name="item_name_0" required></label><br>
+            <label>Количество:<br><input type="number" name="item_quantity_0" value="1" min="1" required></label><br>
+            <label>Цена за единицу:<br><input type="number" name="item_amount_0" required></label><br><br>
+          </div>
+        </div>
+        <button type="button" onclick="addItem()">+ Добавить товар</button><br><br>
+
+        <label>Примечания (notes):<br><textarea name="notes"></textarea></label><br><br>
+        <label>Условия и политика (terms):<br><textarea name="terms"></textarea></label><br><br>
+
         <button type="submit">Создать счёт</button>
       </form>
 
       <script>
+        let itemCount = 1;
+
+        function addItem() {
+          const div = document.createElement('div');
+          div.className = "item";
+          div.innerHTML = \`
+            <label>Название:<br><input type="text" name="item_name_\${itemCount}" required></label><br>
+            <label>Количество:<br><input type="number" name="item_quantity_\${itemCount}" value="1" min="1" required></label><br>
+            <label>Цена за единицу:<br><input type="number" name="item_amount_\${itemCount}" required></label><br><br>
+          \`;
+          document.getElementById('items').appendChild(div);
+          itemCount++;
+        }
+
         document.getElementById('invoiceForm').addEventListener('submit', async (e) => {
           e.preventDefault();
           const formData = new FormData(e.target);
+
+          const items = [];
+          for (let i = 0; i < itemCount; i++) {
+            const name = formData.get(\`item_name_\${i}\`);
+            const quantity = formData.get(\`item_quantity_\${i}\`);
+            const amount = formData.get(\`item_amount_\${i}\`);
+            if (name && quantity && amount) {
+              items.push({
+                name,
+                quantity: parseInt(quantity),
+                amount: parseFloat(amount)
+              });
+            }
+          }
+
           const data = {
             from: formData.get('from'),
             to: formData.get('to'),
-            notes: formData.get('notes'),
+            ship_to: formData.get('ship_to'),
+            date: formData.get('date'),
             payment_terms: formData.get('payment_terms'),
-            items: [
-  { name: formData.get('notes'), quantity: 1, amount: parseFloat(formData.get('items[0][amount]')) }
-]
+            due_date: formData.get('due_date'),
+            purchase_order: formData.get('purchase_order'),
+            notes: formData.get('notes'),
+            terms: formData.get('terms'),
+            items
           };
 
           const response = await fetch('/create-invoice', {
