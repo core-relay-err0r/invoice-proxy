@@ -93,7 +93,7 @@
     </div>
 
     <main>
-      <table>
+      <table id="items">
         <thead>
           <tr>
             <th class="left">Название</th>
@@ -102,11 +102,11 @@
             <th>Сумма</th>
           </tr>
         </thead>
-        <tbody id="items">
+        <tbody>
           <tr>
             <td class="left"><input class="form-control" type="text" name="item_name_0"></td>
-            <td><input class="form-control" type="number" name="item_quantity_0" value="1" min="1"></td>
-            <td><input class="form-control" type="number" name="item_amount_0"></td>
+            <td><input class="form-control" type="number" name="item_quantity_0" value="1" min="1" onchange="recalculate()"></td>
+            <td><input class="form-control" type="number" name="item_amount_0" onchange="recalculate()"></td>
             <td><input class="form-control" type="text" disabled></td>
           </tr>
         </tbody>
@@ -117,7 +117,7 @@
         <div class="col"></div>
         <div class="col-auto">
           <div>Subtotal: $<span id="subtotal">0.00</span></div>
-          <div>Tax (0%): $<span id="tax">0.00</span></div>
+          <div>Tax (5%): $<span id="tax">0.00</span></div>
           <div class="total">Total: $<span id="total">0.00</span></div>
         </div>
       </div>
@@ -139,16 +139,34 @@
     let itemCount = 1;
 
     function addItem() {
-      const tbody = document.getElementById('items');
+      const tbody = document.getElementById('items').querySelector('tbody');
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="left"><input class="form-control" type="text" name="item_name_${itemCount}"></td>
-        <td><input class="form-control" type="number" name="item_quantity_${itemCount}" value="1" min="1"></td>
-        <td><input class="form-control" type="number" name="item_amount_${itemCount}"></td>
+        <td><input class="form-control" type="number" name="item_quantity_${itemCount}" value="1" min="1" onchange="recalculate()"></td>
+        <td><input class="form-control" type="number" name="item_amount_${itemCount}" onchange="recalculate()"></td>
         <td><input class="form-control" type="text" disabled></td>
       `;
       tbody.appendChild(tr);
       itemCount++;
+    }
+
+    function recalculate() {
+      let subtotal = 0;
+      for (let i = 0; i < itemCount; i++) {
+        const quantity = document.getElementsByName(`item_quantity_${i}`)[0];
+        const amount = document.getElementsByName(`item_amount_${i}`)[0];
+        const totalCell = document.getElementsByName(`item_amount_${i}`)[0]?.parentElement?.nextElementSibling?.firstElementChild;
+        if (quantity && amount && totalCell) {
+          const total = (parseFloat(quantity.value) || 0) * (parseFloat(amount.value) || 0);
+          subtotal += total;
+          totalCell.value = total.toFixed(2);
+        }
+      }
+      document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+      const tax = subtotal * 0.05;
+      document.getElementById('tax').innerText = tax.toFixed(2);
+      document.getElementById('total').innerText = (subtotal + tax).toFixed(2);
     }
   </script>
 </body>
