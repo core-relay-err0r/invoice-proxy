@@ -1,8 +1,6 @@
 {
   "name": "invoice-proxy",
   "version": "1.0.0",
-  "name": "invoice-proxy",
-    "version": "1.0.0",
     "description": "Proxy server for generating invoices via invoice-generator.com",
     "main": "index.js",
     "scripts": {
