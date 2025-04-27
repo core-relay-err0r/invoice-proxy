@@ -28,7 +28,30 @@ app.post('/create-invoice', async (req, res) => \{\
         'Content-Type': 'application/json',\
       \},\
     \});\
-\
+
+    app.post('/api/invoice', async (req, res) => {
+  try {
+    const invoiceData = req.body;
+
+    const response = await axios.post('https://invoice-generator.com', invoiceData, {
+      responseType: 'arraybuffer', // чтобы получить PDF в бинарном формате
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename=\"invoice.pdf\"',
+    });
+
+    res.send(response.data);
+  } catch (error) {
+    console.error('Ошибка при создании счёта:', error.message);
+    res.status(500).send('Ошибка при создании счёта.');
+  }
+});
+
     res.set(\{\
       'Content-Type': 'application/pdf',\
       'Content-Disposition': 'attachment; filename="invoice.pdf"',\
