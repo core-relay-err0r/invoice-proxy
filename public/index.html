@@ -78,6 +78,20 @@
         <div>Invoice #: <input type="text" class="form-control d-inline-block w-auto" id="invoice_number"></div>
         <div>Date: <input type="date" class="form-control d-inline-block w-auto" id="date"></div>
         <div>Due Date: <input type="date" class="form-control d-inline-block w-auto" id="due_date"></div>
+        <div>Currency:
+          <select id="currency" class="form-select d-inline-block w-auto">
+            <option value="$">USD ($)</option>
+            <option value="€">EUR (€)</option>
+            <option value="£">GBP (£)</option>
+            <option value="₽">RUB (₽)</option>
+            <option value="¥">JPY (¥)</option>
+            <option value="د.إ">AED (د.إ)</option>
+            <option value="¥">CNY (¥)</option>
+            <option value="₹">INR (₹)</option>
+            <option value="A$">AUD (A$)</option>
+            <option value="C$">CAD (C$)</option>
+          </select>
+        </div>
       </div>
     </header>
 
@@ -116,9 +130,9 @@
       <div class="row mt-4">
         <div class="col"></div>
         <div class="col-auto">
-          <div>Subtotal: $<span id="subtotal">0.00</span></div>
-          <div>Tax (5%): $<span id="tax">0.00</span></div>
-          <div class="total">Total: $<span id="total">0.00</span></div>
+          <div>Subtotal: <span id="subtotal">0.00</span></div>
+          <div>Tax (5%): <span id="tax">0.00</span></div>
+          <div class="total">Total: <span id="total">0.00</span></div>
         </div>
       </div>
     </main>
@@ -137,6 +151,10 @@
 
   <script>
     let itemCount = 1;
+
+    function getCurrencySymbol() {
+      return document.getElementById('currency').value;
+    }
 
     function addItem() {
       const tbody = document.getElementById('items').querySelector('tbody');
@@ -160,14 +178,16 @@
         if (quantity && amount && totalCell) {
           const total = (parseFloat(quantity.value) || 0) * (parseFloat(amount.value) || 0);
           subtotal += total;
-          totalCell.value = total.toFixed(2);
+          totalCell.value = getCurrencySymbol() + ' ' + total.toFixed(2);
         }
       }
-      document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+      document.getElementById('subtotal').innerText = getCurrencySymbol() + ' ' + subtotal.toFixed(2);
       const tax = subtotal * 0.05;
-      document.getElementById('tax').innerText = tax.toFixed(2);
-      document.getElementById('total').innerText = (subtotal + tax).toFixed(2);
+      document.getElementById('tax').innerText = getCurrencySymbol() + ' ' + tax.toFixed(2);
+      document.getElementById('total').innerText = getCurrencySymbol() + ' ' + (subtotal + tax).toFixed(2);
     }
+
+    document.getElementById('currency').addEventListener('change', recalculate);
   </script>
 </body>
 </html>
